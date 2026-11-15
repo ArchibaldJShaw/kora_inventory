@@ -1,0 +1,37 @@
+{
+  "inventory": {
+    "title": "Inventaris",
+    "blocked_downed": "Je kunt dit niet doen terwijl je bewusteloos bent.",
+    "blocked_cuffed": "Je kunt dit niet doen terwijl je geboeid bent.",
+    "blocked_busy": "Je kunt dit niet doen terwijl je een voorwerp gebruikt.",
+    "gave_item": "Je hebt %{amount}x %{item} gegeven.",
+    "received_item": "Je hebt %{amount}x %{item} ontvangen.",
+    "purchased_item": "Je hebt %{amount}x %{item} gekocht voor $%{price} (%{account}).",
+    "purchased_item_free": "Je hebt %{amount}x %{item} gratis ontvangen.",
+    "account_cash": "contant",
+    "account_bank": "bank",
+    "parachute_equipped": "Je hebt al een parachute uitgerust.",
+    "parachute_equipping": "Parachute aantrekken...",
+    "keybind_open": "Inventaris openen",
+    "keybind_hotbar": "Hotbar-item %{slot} gebruiken",
+    "keybind_hotbar_show": "Hotbar tonen",
+    "give_selected": "Geselecteerd voorwerp geven"
+  },
+  "vehicle_doors": {
+    "title": "Voertuig",
+    "trunk_open": "Kofferbak openen",
+    "trunk_close": "Kofferbak sluiten",
+    "hood_open": "Motorkap openen",
+    "hood_close": "Motorkap sluiten",
+    "trunk_storage": "Kofferbakopslag",
+    "locked": "Dit voertuig is vergrendeld.",
+    "no_trunk": "Dit voertuig heeft geen kofferbak.",
+    "no_hood": "Dit voertuig heeft geen motorkap.",
+    "driver_only": "Je moet op de bestuurdersstoel zitten.",
+    "no_control": "Geen verbinding met het voertuig mogelijk. Probeer het opnieuw.",
+    "no_storage": "Dit voertuig heeft geen opslagruimte die je kunt openen."
+  },
+  "shop_hints": {
+    "text": "[ALT] Winkel"
+  }
+}
