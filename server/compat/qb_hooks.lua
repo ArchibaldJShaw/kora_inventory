@@ -310,7 +310,7 @@ local function add(field, eventName, callback)
         return nil
     end
     if not event then
-        print(('^3[kora_inventory]^7 qb-inventory hook: invalid event %s'):format(tostring(eventName)))
+        Kora.logging.warn('qb_hooks.invalid_event', 'qb-inventory hook: invalid event', { eventName = tostring(eventName) })
         return nil
     end
     if not inventory.isCallable(callback) then

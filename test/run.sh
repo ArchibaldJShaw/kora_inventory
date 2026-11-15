@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 "${LUA:-lua}" test/smoke/shared.lua
+"${LUA:-lua}" test/smoke/logging_migration.lua
 "${LUA:-lua}" test/smoke/funcref.lua
 "${LUA:-lua}" test/smoke/rekey.lua
 "${LUA:-lua}" test/smoke/remove_from_contract.lua

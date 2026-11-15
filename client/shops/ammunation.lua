@@ -91,7 +91,7 @@ local function refreshShopkeepers()
             if ok and handle then
                 shopkeepers[#shopkeepers + 1] = handle
             else
-                print(('^3[kora_inventory]^7 Ammu-Nation shopkeeper could not be registered: %s'):format(tostring(handle)))
+                Kora.logging.warn('shops.ammunation_shopkeeper_failed', 'Ammu-Nation shopkeeper could not be registered', { error = tostring(handle) })
             end
         end
     end

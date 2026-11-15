@@ -22,13 +22,7 @@ H.ok(not source:find("exports('", 1, true), 'adapter registers no Cfx exports; p
 
 -- the world the adapter runs in
 
-local warnings = {}
-local realPrint = print
-print = function(...)
-    local parts = {}
-    for i = 1, select('#', ...) do parts[i] = tostring((select(i, ...))) end
-    warnings[#warnings + 1] = table.concat(parts, ' ')
-end
+local logSpy = dofile('test/logging_spy.lua')
 
 KoraInventory = nil
 Kora = { util = { deepClone = function(value)
@@ -82,7 +76,7 @@ end
 
 local function reset()
     locks, lockOrder, writes, opened, created, removedKeys = {}, {}, {}, {}, {}, {}
-    warnings = {}
+    logSpy.reset()
     state = {
         ['player:1'] = inventory('player:1', 'player', 1, 5, 1000, {
             [1] = item('water', 2, 1, { quality = 100, serial = 'A' }),
@@ -565,7 +559,11 @@ Ox.SetSlotCount(1, 9)
 H.equal(state['player:1'].slots, 5, 'player slot counts stay owned by kora_core')
 Ox.SetMaxWeight(1, 9999)
 H.equal(state['player:1'].maxWeight, 1000, 'player max weight stays owned by kora_core')
-H.equal(#warnings, 2, 'each refused player-dimension change is reported, not silently dropped')
+local rejected = 0
+for _, call in ipairs(logSpy.calls) do
+    if call.level == 'warn' and call.event == 'ox.compat_rejected' then rejected = rejected + 1 end
+end
+H.equal(rejected, 2, 'each refused player-dimension change is reported, not silently dropped')
 
 reset()
 Ox.SetMetadata('player:1', 3, { weight = 5 })
@@ -614,5 +612,4 @@ H.equal(rawByName.bread.metadata.quality, 50, 'a name -> item table entry keeps 
 H.equal(raw.weight, (3 * 10) + (2 * 20), 'ConvertInventory recomputes weight from the real item registry')
 H.equal(Ox.ConvertInventory('no-such-reference'), nil, 'an unresolvable string reference with no items table converts to nil')
 
-print = realPrint
 H.finish()

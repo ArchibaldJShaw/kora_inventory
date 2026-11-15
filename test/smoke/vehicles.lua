@@ -1,4 +1,5 @@
 local H = dofile('test/harness.lua')
+local logSpy = dofile('test/logging_spy.lua')
 
 Config = { kora_inventory = {} }
 dofile('config.lua')
@@ -82,13 +83,12 @@ H.equal(assert(V.validate(7, 'trunk', 101)).slots, 50, 'unknown model classes us
 Config.kora_inventory.vehicles.unknownClassFallback = false
 H.equal(V.validate(7, 'trunk', 101), nil, 'unknownClassFallback = false refuses unknown classes')
 Config.kora_inventory.vehicles.unknownClassFallback = true
-local realGet, printed = Kora.lookup.get, 0
-local realPrint = print
-print = function() printed = printed + 1 end
+local realGet = Kora.lookup.get
+logSpy.reset()
 Kora.lookup.get = function() error('No such export lookup_get in resource kora_lib') end
 H.equal(assert(V.validate(7, 'glovebox', 101)).slots, 8, 'a failing lookup falls back to the default glovebox')
 V.validate(7, 'trunk', 101); V.validate(7, 'trunk', 101)
-print = realPrint
+local lookupWarning = logSpy.find('warn', 'vehicles.class_lookup_failed')
 Kora.lookup.get = realGet
 
 -- The glovebox is reached from a seat, never from outside the vehicle.
@@ -106,7 +106,12 @@ H.ok(V.validate(7, 'glovebox', 101), 'gloveboxRequireSeated = false restores the
 Config.kora_inventory.vehicles.gloveboxRequireSeated = nil
 GetVehiclePedIsIn = nil
 Kora.lookup.get = function() error('No such export lookup_get in resource kora_lib') end
-H.equal(printed, 1, 'a failing lookup is logged once per model')
+local lookupWarnings = 0
+for _, call in ipairs(logSpy.calls) do
+    if call.event == 'vehicles.class_lookup_failed' then lookupWarnings = lookupWarnings + 1 end
+end
+H.equal(lookupWarnings, 1, 'a failing lookup is logged once per model')
+H.ok(lookupWarning and lookupWarning.fields.error:find('lookup_get', 1, true), 'the lookup error rides in fields.error')
 Kora.lookup.get = realGet
 entities[101].class = 0
 H.equal(V.validate(7, 'trunk', 102), nil, 'non-vehicle entity is rejected')

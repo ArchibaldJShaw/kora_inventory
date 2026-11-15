@@ -42,7 +42,7 @@ local shopKey = exports.kora_inventory:RegisterShop(shop.id, {
 -- only ever raises a level, never lowers one, and it goes through the same
 -- locked shop-stock funnel as any other restock integration.
 local function report(message, ...)
-    print(('^3[kora_inventory]^7 Ammu-Nation restock: ' .. message):format(...))
+    Kora.logging.warn('shops.ammunation_restock_skipped', 'Ammu-Nation restock row skipped', { detail = message:format(...) })
 end
 
 local mismatchReported = {}
@@ -105,7 +105,7 @@ end
 local function runRestock()
     local ok, restocked, reason = pcall(restock)
     if not ok or restocked == false then
-        print(('^3[kora_inventory]^7 Ammu-Nation restock failed: %s'):format(tostring(ok and reason or restocked)))
+        Kora.logging.warn('shops.ammunation_restock_failed', 'Ammu-Nation restock failed', { error = tostring(ok and reason or restocked) })
     end
 end
 

@@ -355,7 +355,7 @@ Kora.callback.register('qb-inventory:server:giveItem', function(src, target, ite
                 -- Same rollback contract as server.lua's give intent: put it back in
                 -- the original slot, and be loud if even that fails.
                 if not api.AddItem(src, owned.name, giving, chosen, info, 'give-rollback') then
-                    print(('^1[kora_inventory]^7 qb give rollback failed for %s: %s'):format(primary, owned.name))
+                    Kora.logging.error('qb_callbacks.give_rollback_failed', 'qb give rollback failed', { inventoryKey = primary, item = owned.name })
                 end
                 return reject(src, 'recipient could not receive item')
             end

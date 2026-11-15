@@ -57,7 +57,7 @@ end
 local function invoke(callback, ...)
     local result = table.pack(pcall(callback, ...))
     if not result[1] then
-        print(('^3[kora_inventory:crafting]^7 callback failed: %s'):format(tostring(result[2])))
+        Kora.logging.warn('crafting.callback_failed', 'Crafting callback failed', { error = tostring(result[2]) })
         return false, 'crafting policy failed'
     end
     if result[2] == false then

@@ -33,8 +33,9 @@ function persistence.committed(inv)
     dirty[('%s:%s'):format(inv.type, tostring(inv.id))] = nil
 end
 
-local function log(level, message)
-    print(('^%s[kora_inventory:persistence]^7 %s'):format(level, message))
+local LEVELS = { ['1'] = 'error', ['2'] = 'info', ['3'] = 'warn' }
+local function log(level, event, message, fields)
+    return Kora.logging[LEVELS[level] or 'info'](event, message, fields)
 end
 
 local function fnv1a(str)
@@ -287,7 +288,7 @@ function persistence.flush()
             end
         else
             failed[#failed + 1] = { key = inventoryKey, error = err }
-            log('1', ('save failed for %s: %s'):format(inventoryKey, tostring(err)))
+            log('1', 'persistence.save_failed', 'Inventory save failed', { inventoryKey = inventoryKey, error = tostring(err) })
         end
     end
     return #failed == 0, failed
@@ -352,7 +353,7 @@ function persistence.deleteLegacyPoliceTrash()
     -- A locking read on the write pool waits for the original transaction even
     -- if its COMMIT acknowledgement was lost. Never release old dirty snapshots
     -- until this attempt's commit/rollback is known; another UUID is not ours.
-    log('3', 'policetrash deletion is awaiting durable reconciliation')
+    log('3', 'persistence.policetrash_pending', 'Policetrash deletion is awaiting durable reconciliation')
     while true do
         local readOK, snapshot = pcall(Kora.sql.transactionChecked, {
             { query = [[SELECT `source_checksum` FROM `kora_inventory_migration_rows`
@@ -755,7 +756,7 @@ function persistence.migrateLegacy(opts)
     state.migrating = false
     if not ok then
         state.lastError = result
-        log('1', ('legacy migration failed: %s'):format(result))
+        log('1', 'persistence.legacy_migration_failed', 'Legacy migration failed', { error = tostring(result) })
         return nil, result
     end
     state.lastMigration = result
@@ -789,28 +790,28 @@ end
 local function bootstrap()
     if not persistenceConfig.enabled then
         state.ready = true
-        log('3', 'secondary persistence disabled by configuration')
+        log('3', 'persistence.disabled', 'Secondary persistence disabled by configuration')
         return
     end
     local sqlReady, readyErr = Kora.sql.ready(60000)
     if not sqlReady then
         state.lastError = readyErr or 'kora_sql did not become ready'
-        log('1', state.lastError)
+        log('1', 'persistence.sql_not_ready', 'Secondary persistence unavailable', { error = tostring(state.lastError) })
         return
     end
     local reports, migrationErr = Kora.sql.ensureTables(KoraInventorySchema)
     if migrationErr then
         state.lastError = migrationErr
-        log('1', ('schema setup failed: %s'):format(migrationErr))
+        log('1', 'schema.setup_failed', 'Secondary-inventory schema setup failed', { error = tostring(migrationErr) })
         return
     end
     for _, report in ipairs(type(reports) == 'table' and reports or {}) do
         for _, warning in ipairs(type(report) == 'table' and report.warnings or {}) do
-            log('3', ('schema warning: %s'):format(tostring(warning)))
+            log('3', 'schema.warning', 'Secondary-inventory schema warning', { warning = tostring(warning) })
         end
     end
     state.ready = true
-    log('2', 'secondary-inventory schema ready.')
+    log('2', 'schema.ready', 'Secondary-inventory schema ready')
     TriggerEvent('kora_inventory:server:persistenceReady', reports)
 end
 
@@ -822,49 +823,38 @@ RegisterCommand('kora_inventory-migrate', function(source, args)
     CreateThread(function()
         if action == 'dry-run' then
             local report, err = persistence.migrateLegacy({ dryRun = true })
-            log(
-                report and '2' or '1',
-                report
-                        and ('dry run: %d import, %d skip, %d quarantine'):format(
-                            report.imported,
-                            report.skipped,
-                            report.quarantined
-                        )
-                    or tostring(err)
-            )
+            if report then
+                log('2', 'migrate.dry_run_complete', 'Legacy migration dry run complete',
+                    { imported = report.imported, skipped = report.skipped, quarantined = report.quarantined })
+            else
+                log('1', 'migrate.dry_run_failed', 'Legacy migration dry run failed', { error = tostring(err) })
+            end
         elseif action == 'run' then
             local report, err = persistence.migrateLegacy({})
-            log(
-                report and '2' or '1',
-                report
-                        and ('imported: %d, skipped: %d, quarantined: %d'):format(
-                            report.imported,
-                            report.skipped,
-                            report.quarantined
-                        )
-                    or tostring(err)
-            )
+            if report then
+                log('2', 'migrate.run_complete', 'Legacy migration complete',
+                    { imported = report.imported, skipped = report.skipped, quarantined = report.quarantined })
+            else
+                log('1', 'migrate.run_failed', 'Legacy migration failed', { error = tostring(err) })
+            end
         elseif action == 'retry' then
             local report, err = persistence.migrateLegacy({ retry = true })
-            log(
-                report and '2' or '1',
-                report
-                        and ('retry complete: %d import, %d skip, %d quarantine'):format(
-                            report.imported,
-                            report.skipped,
-                            report.quarantined
-                        )
-                    or tostring(err)
-            )
+            if report then
+                log('2', 'migrate.retry_complete', 'Legacy migration retry complete',
+                    { imported = report.imported, skipped = report.skipped, quarantined = report.quarantined })
+            else
+                log('1', 'migrate.retry_failed', 'Legacy migration retry failed', { error = tostring(err) })
+            end
         elseif action == 'verify' then
             local report, err = persistence.verifyMigration()
-            log(
-                report and '2' or '1',
-                report and ('verification: %d records, %d malformed'):format(report.checked, #report.malformed)
-                    or tostring(err)
-            )
+            if report then
+                log('2', 'migrate.verify_complete', 'Legacy migration verification complete',
+                    { checked = report.checked, malformed = #report.malformed })
+            else
+                log('1', 'migrate.verify_failed', 'Legacy migration verification failed', { error = tostring(err) })
+            end
         else
-            log('3', 'usage: kora_inventory-migrate dry-run|run|retry|verify')
+            log('3', 'migrate.usage', 'Usage: kora_inventory-migrate dry-run|run|retry|verify')
         end
     end)
 end, true)

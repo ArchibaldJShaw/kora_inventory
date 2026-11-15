@@ -1,3 +1,4 @@
+local logSpy = dofile('test/logging_spy.lua')
 -- The transfer callback must answer on EVERY path. An unanswered callback leaves
 -- the browser's NUI fetch pending (busy cursor, drags locked) until a timeout.
 -- Covers a same-slot no-op, validation failures and an error raised inside the

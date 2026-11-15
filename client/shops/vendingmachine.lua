@@ -38,7 +38,7 @@ local function registerVendingTargets()
     if ok and id then
         registered = true
     else
-        print(('[kora_inventory] Failed to register vending targets: %s'):format(tostring(id)))
+        Kora.logging.error('shops.vending_targets_failed', 'Failed to register vending targets', { error = tostring(id) })
     end
 end
 
