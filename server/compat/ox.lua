@@ -224,7 +224,7 @@ end
 -- Both SetSlotCount and SetMaxWeight return nothing upstream, so a rejection
 -- has nowhere to go. Print it rather than failing silently.
 local function warn(fmt, ...)
-    print(('^3[kora_inventory:ox]^7 ' .. fmt):format(...))
+    Kora.logging.warn('ox.compat_rejected', 'ox compatibility call rejected', { detail = fmt:format(...) })
 end
 
 local function changeInventoryDimensions(reference, field, value)
@@ -1114,7 +1114,7 @@ function ox.ConfiscateInventory(source)
         -- back that record and ignores `items`, so clearing now would destroy
         -- the player's current items. Leave both untouched.
         if existed then
-            print(('^3[kora_inventory]^7 ConfiscateInventory(%s) refused: a confiscation is already held.'):format(source))
+            Kora.logging.warn('ox.confiscation_refused', 'ConfiscateInventory refused: a confiscation is already held', { playerId = source })
             return
         end
         local cleared = core.setInventoryItems(currentKey, {})

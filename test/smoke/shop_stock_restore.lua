@@ -1,3 +1,4 @@
+local logSpy = dofile('test/logging_spy.lua')
 -- Restored shops against the real server.lua + persistence.lua (framework and
 -- SQL transport stubbed): the rendered `items` and the sold-from `stock` are one
 -- table after a restart, a purchase is visible in the view, and `weightLimit`

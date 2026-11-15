@@ -97,7 +97,7 @@ local function policy(action, source, context)
     end
     local ok, allowed, reason = pcall(callback, source, action, inventoryApi.copy(context or {}))
     if not ok then
-        print(('^3[kora_inventory]^7 evidence access policy failed: %s'):format(tostring(allowed)))
+        Kora.logging.warn('containers.evidence_policy_failed', 'Evidence access policy failed', { error = tostring(allowed) })
         return false, 'evidence access policy failed'
     end
     if allowed ~= true then

@@ -1,4 +1,5 @@
 local H = dofile('test/harness.lua')
+local logSpy = dofile('test/logging_spy.lua')
 
 Config = { kora_inventory = {} }
 dofile('config.lua')
@@ -102,8 +103,7 @@ H.equal(captured.data.weightLimit, false, 'the weight policy reaches RegisterSho
 -- A refused shelf write falls back to row-by-row: rows that fit are kept and
 -- each refused row is named in the log, instead of one bare failure.
 local printed = {}
-local realPrint = print
-print = function(line) printed[#printed + 1] = line end
+logSpy.reset()
 stored = { [1] = { name = 'weapon_knife', amount = 1, price = 250 } }
 local writes = {}
 exports.kora_inventory.SetShopItems = function(_, _, items)
@@ -125,23 +125,24 @@ H.equal(stored[1].amount, shop.inventory[1].amount, 'rows that fit are still res
 H.equal(stored[2], nil, 'the refused row is left as it was')
 H.equal(stored[3].amount, shop.inventory[3].amount, 'rows after the refused one are still restocked')
 local named = false
-for _, line in ipairs(printed) do
-    if line:find(shop.inventory[2].name, 1, true) and line:find('over weight', 1, true) and line:find('slot 2', 1, true) then named = true end
+for _, call in ipairs(logSpy.calls) do
+    local line = call.fields and call.fields.detail or ''
+    if call.level == 'warn' and call.event == 'shops.ammunation_restock_skipped'
+        and line:find(shop.inventory[2].name, 1, true) and line:find('over weight', 1, true) and line:find('slot 2', 1, true) then named = true end
 end
 H.ok(named, 'the log names the refused slot, item and reason')
 
 -- A slot holding a different item than its config row is reported once.
-printed = {}
+logSpy.reset()
 stored = { [1] = { name = 'weapon_bat', amount = 1, price = 500 } }
 exports.kora_inventory.SetShopItems = function(_, _, items) stored = items return true end
 A.restock()
 A.restock()
 local mismatches = 0
-for _, line in ipairs(printed) do
-    if line:find('slot 1 holds weapon_bat', 1, true) then mismatches = mismatches + 1 end
+for _, call in ipairs(logSpy.calls) do
+    if call.fields and call.fields.detail and call.fields.detail:find('slot 1 holds weapon_bat', 1, true) then mismatches = mismatches + 1 end
 end
 H.equal(mismatches, 1, 'a slot/item mismatch is logged once, not every interval')
 H.equal(stored[1].name, 'weapon_bat', 'a mismatched slot is never overwritten')
-print = realPrint
 
 H.finish()

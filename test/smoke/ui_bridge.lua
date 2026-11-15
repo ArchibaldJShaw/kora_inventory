@@ -1,3 +1,4 @@
+local logSpy = dofile('test/logging_spy.lua')
 local H = dofile('test/harness.lua')
 local file = assert(io.open('client/ui.lua', 'r'))
 local source = file:read('*a')

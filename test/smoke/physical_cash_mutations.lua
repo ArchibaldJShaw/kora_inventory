@@ -1,3 +1,4 @@
+local logSpy = dofile('test/logging_spy.lua')
 -- Execute the real authority and its trusted callers without an FXServer.
 local H = dofile('test/harness.lua')
 Config = {}

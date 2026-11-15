@@ -457,7 +457,7 @@ RegisterNUICallback('kora_inventory:nui:intent', function(data, cb)
             -- already dropped its queue, so its old verdict is not reported.
             delivered = true
         elseif not called then
-            print(('^3[kora_inventory]^7 intent failed: %s'):format(tostring(ok)))
+            Kora.logging.warn('ui.intent_failed', 'Inventory intent failed', { error = tostring(ok) })
             deliver(false, 'inventory request failed')
         else
             deliver(ok == true, type(result) == 'string' and result or 'action rejected')
@@ -496,7 +496,7 @@ RegisterNUICallback('kora_inventory:nui:intent', function(data, cb)
         announce = false,
     })
     if not called then
-        print(('^3[kora_inventory]^7 intent failed: %s'):format(tostring(ok)))
+        Kora.logging.warn('ui.intent_failed', 'Inventory intent failed', { error = tostring(ok) })
         reply({ ok = false, error = 'inventory request failed' })
         return
     end

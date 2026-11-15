@@ -1,6 +1,7 @@
 -- The bundled UI's direct request transport: one net event in, one out, the same
 -- handlers as the kora_lib callbacks, and an answer on every path.
 local H = dofile('test/harness.lua')
+local logSpy = dofile('test/logging_spy.lua')
 
 Config = { kora_inventory = {} }
 dofile('config.lua')
@@ -165,20 +166,17 @@ H.ok(answer ~= nil, 'a raising handler is still answered')
 H.equal(answer.args[2], false, 'as a failure')
 
 -- Slow requests are logged with the time the server spent.
-local lines, realPrint = {}, print
-print = function(...) lines[#lines + 1] = table.concat({ ... }, ' ') end
+logSpy.reset()
 step = 400
 call(13, 'intent', { token = session.token, action = 'sync' })
 step = 0
-print = realPrint
-local slow
-for _, line in ipairs(lines) do slow = slow or line:find('slow intent request', 1, true) end
+local slow = logSpy.find('warn', 'request.slow')
 H.ok(slow, 'a request slower than slowRequestMs is logged')
-lines = {}
-print = function(...) lines[#lines + 1] = table.concat({ ... }, ' ') end
+H.equal(slow.fields.action, 'intent', 'the slow-request record names the action')
+H.ok(slow.fields.elapsedMs >= 400, 'the slow-request record carries the server-side time')
+logSpy.reset()
 call(14, 'intent', { token = session.token, action = 'sync' })
-print = realPrint
-H.equal(#lines, 0, 'a fast request logs nothing')
+H.equal(#logSpy.calls, 0, 'a fast request logs nothing')
 
 -- The callbacks stay registered for third-party renderers.
 H.ok(callbacks['kora_inventory:server:transfer'] and callbacks['kora_inventory:server:intent'], 'kora_lib callbacks remain')

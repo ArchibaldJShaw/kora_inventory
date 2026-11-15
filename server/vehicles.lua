@@ -60,7 +60,7 @@ end
 local function invokeAccessCallback(callback, src, vehicle)
     local ok, allowed, reason = pcall(callback, src, inventory.copy(vehicle))
     if not ok then
-        print(('^3[kora_inventory:vehicles]^7 vehicle access callback failed: %s'):format(tostring(allowed)))
+        Kora.logging.warn('vehicles.access_callback_failed', 'Vehicle access callback failed', { error = tostring(allowed) })
         return false, 'vehicle access check failed'
     end
     if allowed == false then
@@ -130,8 +130,7 @@ function vehicles.modelClass(model)
     if not ok then
         if not warnedModels[model] then
             warnedModels[model] = true
-            print(('[kora_inventory] vehicle class lookup failed for model %s, using default capacity: %s')
-                :format(tostring(model), tostring(record)))
+            Kora.logging.warn('vehicles.class_lookup_failed', 'Vehicle class lookup failed, using default capacity', { model = tostring(model), error = tostring(record) })
         end
         return nil
     end

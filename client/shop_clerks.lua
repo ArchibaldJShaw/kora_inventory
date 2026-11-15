@@ -138,7 +138,7 @@ local function registerClerks()
                             local ok, err = pcall(spawnClerk, record)
                             record.spawning = false
                             if not ok then
-                                print(('^3[kora_inventory]^7 shop clerk could not be spawned: %s'):format(tostring(err)))
+                                Kora.logging.warn('shops.clerk_spawn_failed', 'Shop clerk could not be spawned', { error = tostring(err) })
                             end
                         end)
                     end,

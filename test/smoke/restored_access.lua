@@ -1,3 +1,4 @@
+local logSpy = dofile('test/logging_spy.lua')
 -- Real persistence/authority code, with only the framework and SQL transport stubbed.
 local H = dofile('test/harness.lua')
 Config = {}

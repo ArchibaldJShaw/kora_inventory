@@ -29,14 +29,13 @@ end
 function inventory.createShopBlip(optionName, coords, options)
     local ok, blip = pcall(Kora.blips.create, coords, options)
     if ok then return blip end
-    print(("^3[kora_inventory] %s = %s was rejected by Kora.blips.create (%s); creating the blip without a category.^7")
-        :format(optionName, tostring(options.category), tostring(blip)))
+    Kora.logging.warn('blips.category_rejected', 'Blip category rejected; creating the blip without a category', { option = optionName, category = tostring(options.category), error = tostring(blip) })
     local fallback = {}
     for key, value in pairs(options) do fallback[key] = value end
     fallback.category = nil
     ok, blip = pcall(Kora.blips.create, coords, fallback)
     if ok then return blip end
-    print(("^3[kora_inventory] %s: could not create the blip at all (%s).^7"):format(optionName, tostring(blip)))
+    Kora.logging.warn('blips.create_failed', 'Could not create the blip at all', { option = optionName, error = tostring(blip) })
     return nil
 end
 
