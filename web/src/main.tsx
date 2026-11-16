@@ -1,6 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import App from "./App"
+import { LocaleProvider } from "./lib/locales"
 import "./styles.css"
 import "./lib/fft"
 
@@ -17,5 +18,5 @@ scaleNui()
 window.addEventListener("resize", scaleNui)
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-    <React.StrictMode><App /></React.StrictMode>,
+    <React.StrictMode><LocaleProvider><App /></LocaleProvider></React.StrictMode>,
 )

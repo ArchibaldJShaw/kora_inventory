@@ -14,6 +14,7 @@ import { predictBuy, predictMove, refreshedInventories, restoreInventories, type
 import { createIntentResults } from "@/lib/intentResults"
 import { createMoveQueue, isNoopMove, type MoveJob, type MoveQueue } from "@/lib/moveQueue"
 import { formatMetaValue } from "@/lib/format"
+import { useLocale } from "@/lib/locales"
 import { copyText, itemCopyText } from "@/lib/clipboard"
 import { DEFAULT_PLAYER_LAYOUT, layoutOffsetPx, normalizePlayerLayout, onScreenNudge, type PlayerLayout } from "@/lib/playerLayout"
 
@@ -204,6 +205,7 @@ interface SlotProps {
  * mouse. Unlike HTML5 DnD or source pointer-capture, it resolves the actual
  * destination slot after the cursor leaves the source element. */
 function InventorySlot({ item, index, inventory, selected, busy, hotbar, lastHotbar, canDropSlot, onDrop, onDragEnd, onSelect, onActivate, onSplit }: SlotProps) {
+    const t = useLocale()
     const target = useMemo<SlotTarget>(() => ({ inventoryId: inventory.id, slot: index }), [index, inventory.id])
     const suppressClick = useRef(false)
     const [{ isDragging }, dragRef] = useDrag<DragSlot, SlotTarget, { isDragging: boolean }>(() => ({
@@ -251,7 +253,7 @@ function InventorySlot({ item, index, inventory, selected, busy, hotbar, lastHot
         className={classes}
         data-fft-kind={inventory.type === "shop" ? "shop-item" : inventory.type === "player" ? "player-slot" : undefined}
         data-fft-item={item?.name}
-        aria-label={item ? `${item.label ?? item.name}, slot ${index}` : `Empty slot ${index}`}
+        aria-label={item ? t("ui.slot_item", { item: item.label ?? item.name, slot: index }) : t("ui.empty_slot", { slot: index })}
         aria-pressed={selected || undefined}
         aria-disabled={busy || undefined}
         data-pending={item?.pending || undefined}
@@ -360,23 +362,24 @@ function DragPreview({ session }: { session: SessionSnapshot | null }) {
 interface ActiveItemBox extends ItemBoxReceipt { id: number }
 
 const ITEM_BOX_ACTIONS = {
-    add: { eyebrow: "Received", sign: "+", tone: "gain" },
-    purchase: { eyebrow: "Purchased", sign: "+", tone: "gain" },
-    remove: { eyebrow: "Removed", sign: "-", tone: "loss" },
-    use: { eyebrow: "Used", sign: "-", tone: "loss" },
+    add: { key: "ui.received", sign: "+", tone: "gain" },
+    purchase: { key: "ui.purchased", sign: "+", tone: "gain" },
+    remove: { key: "ui.removed", sign: "-", tone: "loss" },
+    use: { key: "ui.used", sign: "-", tone: "loss" },
 } as const
 
 function ItemBoxStack({ boxes }: { boxes: ActiveItemBox[] }) {
+    const t = useLocale()
     if (!boxes.length) return null
-    return <aside className="item-box-stack" aria-live="polite" aria-label="Item receipts">
+    return <aside className="item-box-stack" aria-live="polite" aria-label={t("ui.item_receipts")}>
         {boxes.map((box) => {
             // A receipt for an action this build does not know about still
             // reads correctly as an unsigned change rather than a false gain. A signed
             // receipt shows +1 / -1 only; the x multiplier is for unsigned ones.
-            const action = ITEM_BOX_ACTIONS[box.action] ?? { eyebrow: "Updated", sign: "", tone: "neutral" }
+            const action = ITEM_BOX_ACTIONS[box.action] ?? { key: "ui.updated", sign: "", tone: "neutral" }
             return <div className={`item-box item-box-${action.tone}`} key={box.id}>
                 <ItemArtwork item={box} className="item-box-art" />
-                <div><p>{action.eyebrow}</p><strong>{box.label ?? box.name}</strong></div>
+                <div><p>{t(action.key)}</p><strong>{box.label ?? box.name}</strong></div>
                 <b>{action.sign ? `${action.sign}${box.amount}` : `×${box.amount}`}</b>
             </div>
         })}
@@ -386,7 +389,8 @@ function ItemBoxStack({ boxes }: { boxes: ActiveItemBox[] }) {
 interface HotbarState { id: number; bottom?: number; slots: Array<Partial<InventoryItem> & { slot: number }> }
 
 function HotbarHud({ hotbar }: { hotbar: HotbarState }) {
-    return <aside className="hotbar-hud" aria-label="Hotbar" style={Number.isFinite(hotbar.bottom) ? { bottom: `${hotbar.bottom}px` } : undefined}>
+    const t = useLocale()
+    return <aside className="hotbar-hud" aria-label={t("ui.hotbar")} style={Number.isFinite(hotbar.bottom) ? { bottom: `${hotbar.bottom}px` } : undefined}>
         {hotbar.slots.map((item) => <div className={`hotbar-slot${item.name ? "" : " hotbar-slot-empty"}`} key={item.slot}>
             <kbd>{item.slot}</kbd>
             {item.name ? <>
@@ -403,6 +407,7 @@ function HotbarHud({ hotbar }: { hotbar: HotbarState }) {
  * behind the shell (z-index) so a slot under the cursor always wins the drop.
  * `didDrop()` is belt-and-braces for the same reason. */
 function WorldDropZone({ session, busy, onDropOut }: { session: SessionSnapshot; busy: boolean; onDropOut: (source: DragSlot) => void }) {
+    const t = useLocale()
     const dragging = useDragLayer((monitor) => monitor.isDragging())
     const [{ isOver, canDrop }, dropRef] = useDrop<DragSlot, undefined, { isOver: boolean; canDrop: boolean }>(() => ({
         accept: SLOT_DRAG_TYPE,
@@ -419,7 +424,7 @@ function WorldDropZone({ session, busy, onDropOut }: { session: SessionSnapshot;
     const armed = isOver && canDrop
     return <>
         <div ref={dropRef} className={`world-drop-zone${armed ? " world-drop-zone-armed" : ""}`} aria-hidden="true" />
-        <p className={`world-drop-hint${armed ? " world-drop-hint-armed" : ""}`} role="status">{canDrop ? (armed ? "Release to drop on the ground" : "Drag outside the window to drop") : busy ? "Updating inventory…" : "This item cannot be dropped"}</p>
+        <p className={`world-drop-hint${armed ? " world-drop-hint-armed" : ""}`} role="status">{canDrop ? (armed ? t("ui.release_to_drop") : t("ui.drag_out_to_drop")) : busy ? t("ui.updating_inventory") : t("ui.cannot_drop")}</p>
     </>
 }
 
@@ -437,6 +442,7 @@ function DragGuard({ open }: { open: boolean }) {
 }
 
 function InventoryApp() {
+    const t = useLocale()
     const [session, setSession] = useState<SessionSnapshot | null>(null)
     const [selected, setSelected] = useState<Selection | undefined>()
     const [query, setQuery] = useState("")
@@ -560,14 +566,14 @@ function InventoryApp() {
         updateSession((current) => current?.sessionId === sessionId ? null : current)
     })
     useNuiEvent<{ reason?: string }>("kora_inventory:nui:rejected", ({ reason }) => {
-        const message = reason ?? "Action rejected by inventory"
+        const message = reason ?? t("ui.action_rejected")
         // Settles the request in flight (once); with nothing in flight it is only a notice.
         if (queue.pending) queue.reject(message)
         else setError(message)
     })
     useNuiEvent<{ requestId?: number; ok?: boolean; error?: string }>("kora_inventory:nui:intentResult", ({ requestId, ok, error }) => {
         if (typeof requestId !== "number") return
-        results.current.deliver(requestId, ok === true ? { ok: true } : { ok: false, error: error === "timeout" ? "Inventory did not respond" : error })
+        results.current.deliver(requestId, ok === true ? { ok: true } : { ok: false, error: error === "timeout" ? t("ui.inventory_timeout") : error })
     })
     useNuiEvent<{ available?: boolean }>("kora_inventory:nui:giveAvailability", ({ available }) => setGiveAvailable(available === true))
     useNuiEvent<ItemBoxReceipt>("kora_inventory:nui:itemBox", (receipt) => {
@@ -623,8 +629,8 @@ function InventoryApp() {
                 awaiting: unlockedNow ? undefined : awaiting,
             }
         })
-        if (outcome === "full") setError("Too many moves waiting for the server")
-    }, [queue, updateSession])
+        if (outcome === "full") setError(t("ui.too_many_moves"))
+    }, [queue, t, updateSession])
     const submit = useCallback((intent: Built["intent"], payload: Record<string, unknown> = {}, awaiting?: string[]) => {
         enqueueRequest(() => ({ intent, payload, awaiting }))
     }, [enqueueRequest])
@@ -633,15 +639,15 @@ function InventoryApp() {
             const from = findInventory(current, fromId)
             const to = findInventory(current, toId)
             const item = findItem(from, fromSlot)
-            if (!from || !to || !item || !Number.isFinite(item.amount) || item.amount < 1) return "That item is no longer available"
+            if (!from || !to || !item || !Number.isFinite(item.amount) || item.amount < 1) return t("ui.item_unavailable")
             // Dropped back on its own slot: nothing to ask the server, nothing to lock.
             if (isNoopMove({ id: from.id, slot: fromSlot }, { id: to.id, slot: toSlot })) return undefined
             if (from.type === "shop") {
-                if (current.player.id !== to.id) return "Shop items can only be purchased into your inventory"
+                if (current.player.id !== to.id) return t("ui.shop_player_only")
                 const prediction = configRef.current.optimisticMoves ? predictBuy(current, { shopInventory: from.id, slot: fromSlot, amount: 1 }) : undefined
                 return { intent: "buy", payload: { inventory: from.id, slot: fromSlot, amount: 1 }, awaiting: [from.id, to.id], prediction }
             }
-            if (to.type === "shop") return "Shop inventory is read only"
+            if (to.type === "shop") return t("ui.shop_read_only")
             const amount = requestedAmount ?? item.amount
             const prediction = configRef.current.optimisticMoves ? predictMove(current, { fromInventory: from.id, fromSlot, toInventory: to.id, toSlot, amount }) : undefined
             return {
@@ -651,7 +657,7 @@ function InventoryApp() {
                 prediction,
             }
         })
-    }, [enqueueRequest])
+    }, [enqueueRequest, t])
 
     const canDropSlot = useCallback((source: DragSlot, target: SlotTarget) => {
         if (!source || !session || locked || isNoopMove({ id: source.inventoryId, slot: source.slot }, { id: target.inventoryId, slot: target.slot })) return false
@@ -676,21 +682,21 @@ function InventoryApp() {
             const item = Object.values(shop?.items ?? {}).find(entry => entry?.name === detail.item)
             const target = session?.player
             if (!shop || shop.type !== "shop" || !item || !target || locked) {
-                detail.error = 'Shop item or player inventory is unavailable'
+                detail.error = t("ui.shop_item_unavailable")
                 return
             }
             const destination = Object.values(target.items).find(entry => entry?.name === item.name)?.slot ??
                 Array.from({ length: target.slots }, (_, index) => index + 1).find(slot => !Object.values(target.items).some(entry => entry?.slot === slot))
-            if (!destination) { detail.error = 'No destination slot available'; return }
+            if (!destination) { detail.error = t("ui.no_destination_slot"); return }
             const source = { inventoryId: shop.id, slot: item.slot }
             const dest = { inventoryId: target.id, slot: destination }
-            if (!canDropSlot(source, dest)) { detail.error = 'Player slot cannot accept the shop item'; return }
+            if (!canDropSlot(source, dest)) { detail.error = t("ui.player_slot_rejects_shop_item"); return }
             dropSlot(source, dest)
             detail.accepted = true
         }
         window.addEventListener('fft:dragBuy', handleDragBuy)
         return () => window.removeEventListener('fft:dragBuy', handleDragBuy)
-    }, [session, locked, canDropSlot, dropSlot])
+    }, [session, locked, canDropSlot, dropSlot, t])
 
     // A single click inspects, and only inspects. Moving is drag-only (drag onto
     // a slot to move/stack, drag outside the window to drop), so a click on an
@@ -708,19 +714,19 @@ function InventoryApp() {
         if (source.inventoryId !== sessionRef.current?.player.id) return
         enqueueRequest((current) => {
             const item = findItem(current.player, source.slot)
-            if (!item || !Number.isFinite(item.amount) || item.amount < 1) return "That item is no longer available"
+            if (!item || !Number.isFinite(item.amount) || item.amount < 1) return t("ui.item_unavailable")
             setSelected(undefined)
             return { intent: "drop", payload: { inventory: source.inventoryId, slot: source.slot, amount: item.amount } }
         })
-    }, [enqueueRequest])
+    }, [enqueueRequest, t])
     const split = useCallback((inventory: InventoryView, item: InventoryItem, requestedAmount?: number) => {
         if (!session || inventory.type === "shop" || item.amount < 2) return
         const amount = Math.floor(requestedAmount ?? selectedCount)
         const emptySlot = Array.from({ length: inventory.slots }, (_, index) => index + 1).find((slot) => !findItem(inventory, slot))
-        if (!Number.isFinite(amount) || amount < 1 || amount >= item.amount) { setError(`Choose an amount from 1 to ${item.amount - 1}`); return }
-        if (!emptySlot) { setError("No empty slot available to split this stack"); return }
+        if (!Number.isFinite(amount) || amount < 1 || amount >= item.amount) { setError(t("ui.choose_split_amount", { amount: item.amount - 1 })); return }
+        if (!emptySlot) { setError(t("ui.no_empty_slot")); return }
         move(inventory.id, item.slot, inventory.id, emptySlot, amount)
-    }, [move, selectedCount, session])
+    }, [move, selectedCount, session, t])
     const promptSplit = useCallback((inventory: InventoryView, item: InventoryItem) => {
         if (!uiConfig.rightClickSplit || inventory.type === "shop" || item.amount < 2) return
         setSplitTarget({ inventory, item })
@@ -738,9 +744,9 @@ function InventoryApp() {
     useEffect(() => { setSplitTarget(undefined) }, [session?.sessionId, session?.revision, session?.secondaryRevision])
 
     const use = useCallback((inventory: InventoryView, item: InventoryItem) => {
-        if (inventory.id !== session?.player.id) { setError("Only items in your inventory can be used"); return }
+        if (inventory.id !== session?.player.id) { setError(t("ui.use_player_item_only")); return }
         void submit("use", { inventory: inventory.id, slot: item.slot })
-    }, [session, submit])
+    }, [session, submit, t])
     const buy = useCallback((inventory: InventoryView, item: InventoryItem, amount = 1) => {
         if (inventory.type !== "shop" || !session) return
         const stock = Math.max(1, Math.floor(item.amount))
@@ -841,9 +847,9 @@ function InventoryApp() {
         <DragPreview session={session} />
         <div className="inventory-heading">
             <header className="inventory-topbar">
-                <div className="brand"><span className="brand-mark"><PackageOpen size={18} /></span><span>Inventory</span></div>
-                <label className="search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter the selected item" /></label>
-                <div className="topbar-actions"><span className="session-state">{session.secondary ? "Transfer open" : "Personal inventory"}</span><button className="close" onClick={close} aria-label="Close inventory"><X size={18} /></button></div>
+                <div className="brand"><span className="brand-mark"><PackageOpen size={18} /></span><span>{t("ui.inventory_label")}</span></div>
+                <label className="search"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("ui.filter_selected_item")} /></label>
+                <div className="topbar-actions"><span className="session-state">{session.secondary ? t("ui.transfer_open") : t("ui.personal_inventory")}</span><button className="close" onClick={close} aria-label={t("ui.close_inventory")}><X size={18} /></button></div>
             </header>
             {error && <div className="notice" role="alert"><CircleAlert size={16} />{error}</div>}
         </div>
@@ -851,34 +857,34 @@ function InventoryApp() {
             <section className="inventory-stage inventory-stage-player">
                 <InventoryPanel inventory={session.player} isPlayer selected={selected} busy={locked} canDropSlot={canDropSlot} onDrop={dropSlot} onDragEnd={noop} onSelect={selectSlot} onActivate={activateItem} onSplit={promptSplit} />
             </section>
-            {(!solo || selected) && <aside className={`item-detail${solo ? " item-detail-drawer" : ""}${filteredSelected ? "" : " item-detail-empty"}${filteredSelected && uiConfig.inspectorCopy ? " item-detail-copyable" : ""}`} aria-label="Selected item actions">
-                <header className="detail-header"><span>Item inspector</span><span className="detail-header-actions"><em>{filteredSelected ? "Selected" : "Select an item"}</em>{filteredSelected && uiConfig.inspectorCopy && <button className={`detail-copy${copyState === "idle" ? "" : ` detail-copy-${copyState}`}`} onClick={() => void copySelected(filteredSelected)} aria-label="Copy item details and metadata" title="Copy item details and metadata (JSON)">{copyState === "copied" ? <Check size={12} /> : <ClipboardCopy size={12} />}<span>{copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}</span></button>}{solo && <button className="detail-close" onClick={() => setSelected(undefined)} aria-label="Close item drawer"><X size={14} /></button>}</span></header>
+            {(!solo || selected) && <aside className={`item-detail${solo ? " item-detail-drawer" : ""}${filteredSelected ? "" : " item-detail-empty"}${filteredSelected && uiConfig.inspectorCopy ? " item-detail-copyable" : ""}`} aria-label={t("ui.selected_item_actions")}>
+                <header className="detail-header"><span>{t("ui.item_inspector")}</span><span className="detail-header-actions"><em>{filteredSelected ? t("ui.selected") : t("ui.select_an_item")}</em>{filteredSelected && uiConfig.inspectorCopy && <button className={`detail-copy${copyState === "idle" ? "" : ` detail-copy-${copyState}`}`} onClick={() => void copySelected(filteredSelected)} aria-label={t("ui.copy_item_details")} title={`${t("ui.copy_item_details")} (JSON)`}>{copyState === "copied" ? <Check size={12} /> : <ClipboardCopy size={12} />}<span>{copyState === "copied" ? t("ui.copied") : copyState === "failed" ? t("ui.copy_failed") : t("ui.copy")}</span></button>}{solo && <button className="detail-close" onClick={() => setSelected(undefined)} aria-label={t("ui.close_item_drawer")}><X size={14} /></button>}</span></header>
                 {filteredSelected ? <>
                 <ItemArtwork item={filteredSelected.item} className="detail-art" />
-                <p className="eyebrow">{filteredSelected.inventory.type === "shop" ? "shop item" : `slot ${filteredSelected.item.slot}`}</p>
+                <p className="eyebrow">{filteredSelected.inventory.type === "shop" ? t("ui.shop_item") : t("ui.slot_number", { slot: filteredSelected.item.slot })}</p>
                 <h1>{filteredSelected.item.label ?? filteredSelected.item.name}</h1>
-                <p>{filteredSelected.item.description ?? "No item description available."}</p>
-                <dl><dt>Amount</dt><dd>×{filteredSelected.item.amount}</dd><dt>Weight</dt><dd>{filteredSelected.item.weight ?? 0} g</dd>{filteredSelected.item.displayMeta?.map((meta, index) => <Fragment key={index}><dt>{meta.label}</dt><dd>{formatMetaValue(meta.value, uiConfig.inspectorDecimals)}</dd></Fragment>)}{filteredSelected.inventory.type === "shop" && <><dt>Price</dt><dd>${(filteredSelected.item.price ?? 0).toLocaleString()}</dd></>}</dl>
+                <p>{filteredSelected.item.description ?? t("ui.no_item_description")}</p>
+                <dl><dt>{t("ui.amount")}</dt><dd>×{filteredSelected.item.amount}</dd><dt>{t("ui.weight")}</dt><dd>{filteredSelected.item.weight ?? 0} g</dd>{filteredSelected.item.displayMeta?.map((meta, index) => <Fragment key={index}><dt>{meta.label}</dt><dd>{formatMetaValue(meta.value, uiConfig.inspectorDecimals)}</dd></Fragment>)}{filteredSelected.inventory.type === "shop" && <><dt>{t("ui.price")}</dt><dd>${(filteredSelected.item.price ?? 0).toLocaleString()}</dd></>}</dl>
                 {filteredSelected.inventory.type === "shop" ? <div className="amount-action">
-                    {selectedMax > 1 && <input data-fft-kind="quantity" className="amount-slider" type="range" min={1} max={selectedMax} step={1} value={selectedCount} disabled={movePending} aria-label={`Quantity to buy, 1 to ${selectedMax}`} onChange={(event) => setSelectedAmount(Number(event.target.value))} />}
-                    <button data-fft-kind="buy" data-fft-item={filteredSelected.item.name} data-fft-quantity={selectedCount} className="primary-action" disabled={movePending} onClick={() => buy(filteredSelected.inventory, filteredSelected.item, selectedCount)}>Buy {selectedCount} · ${((filteredSelected.item.price ?? 0) * selectedCount).toLocaleString()}</button>
+                    {selectedMax > 1 && <input data-fft-kind="quantity" className="amount-slider" type="range" min={1} max={selectedMax} step={1} value={selectedCount} disabled={movePending} aria-label={t("ui.quantity_to_buy", { amount: selectedMax })} onChange={(event) => setSelectedAmount(Number(event.target.value))} />}
+                    <button data-fft-kind="buy" data-fft-item={filteredSelected.item.name} data-fft-quantity={selectedCount} className="primary-action" disabled={movePending} onClick={() => buy(filteredSelected.inventory, filteredSelected.item, selectedCount)}>{t("ui.buy_amount_price", { amount: selectedCount, price: ((filteredSelected.item.price ?? 0) * selectedCount).toLocaleString() })}</button>
                 </div> : <>
-                    {(filteredSelected.item.useable || filteredSelected.item.container) && <button className="primary-action" disabled={movePending} onClick={() => use(filteredSelected.inventory, filteredSelected.item)}>{filteredSelected.item.container ? `Open ${filteredSelected.item.label ?? "container"}` : "Use item"}</button>}
-                    {selectedMax > 1 && <div className="amount-picker"><input className="amount-slider" type="range" min={1} max={selectedMax} step={1} value={selectedCount} disabled={movePending} aria-label={`Amount to move, 1 to ${selectedMax}`} onChange={(event) => setSelectedAmount(Number(event.target.value))} /><input className="amount-input" type="number" min={1} max={selectedMax} value={selectedCount} disabled={movePending} aria-label="Amount to move" onChange={(event) => setSelectedAmount(Number(event.target.value))} /></div>}
-                    {selectedMax > 1 && <button className="quiet-action" disabled={movePending} onClick={() => split(filteredSelected.inventory, filteredSelected.item)}>Split {selectedCount} / {selectedMax - selectedCount}</button>}
+                    {(filteredSelected.item.useable || filteredSelected.item.container) && <button className="primary-action" disabled={movePending} onClick={() => use(filteredSelected.inventory, filteredSelected.item)}>{filteredSelected.item.container ? t("ui.open_container", { item: filteredSelected.item.label ?? "container" }) : t("ui.use_item")}</button>}
+                    {selectedMax > 1 && <div className="amount-picker"><input className="amount-slider" type="range" min={1} max={selectedMax} step={1} value={selectedCount} disabled={movePending} aria-label={t("ui.amount_to_move", { amount: selectedMax })} onChange={(event) => setSelectedAmount(Number(event.target.value))} /><input className="amount-input" type="number" min={1} max={selectedMax} value={selectedCount} disabled={movePending} aria-label={t("ui.amount_to_move", { amount: selectedMax })} onChange={(event) => setSelectedAmount(Number(event.target.value))} /></div>}
+                    {selectedMax > 1 && <button className="quiet-action" disabled={movePending} onClick={() => split(filteredSelected.inventory, filteredSelected.item)}>{t("ui.split_amount", { amount: selectedCount, remaining: selectedMax - selectedCount })}</button>}
                     {filteredSelected.inventory.id === session.player.id && <>
                         <div className="amount-action">
-                            <button className="quiet-action" disabled={movePending} onClick={() => void submit("drop", { inventory: filteredSelected.inventory.id, slot: filteredSelected.item.slot, amount: selectedCount })}>Drop {selectedCount}</button>
+                            <button className="quiet-action" disabled={movePending} onClick={() => void submit("drop", { inventory: filteredSelected.inventory.id, slot: filteredSelected.item.slot, amount: selectedCount })}>{t("ui.drop_amount", { amount: selectedCount })}</button>
                         </div>
-                        {giveAvailable && <button className="quiet-action" disabled={movePending} onClick={() => void submit("give", { inventory: filteredSelected.inventory.id, slot: filteredSelected.item.slot, amount: clampGiveAmount(selectedCount, filteredSelected.item.amount) })}>Give {selectedCount}</button>}
+                        {giveAvailable && <button className="quiet-action" disabled={movePending} onClick={() => void submit("give", { inventory: filteredSelected.inventory.id, slot: filteredSelected.item.slot, amount: clampGiveAmount(selectedCount, filteredSelected.item.amount) })}>{t("ui.give_amount", { amount: selectedCount })}</button>}
                     </>}
                 </>}
-            </> : <div className="empty-detail"><span className="empty-detail-icon"><PackageOpen size={30} /></span><h1>Inspect an item</h1><p>{selected ? `${(selected.item.label ?? selected.item.name)} is hidden by the current search.` : "Select an item to see its details. Drag it between slots to move or stack it, or drag it outside the window to drop it."}</p></div>}</aside>}
+            </> : <div className="empty-detail"><span className="empty-detail-icon"><PackageOpen size={30} /></span><h1>{t("ui.inspect_item")}</h1><p>{selected ? t("ui.hidden_by_search", { item: selected.item.label ?? selected.item.name }) : t("ui.select_item_help")}</p></div>}</aside>}
             {session.secondary
                 ? <section className="inventory-stage inventory-stage-secondary"><InventoryPanel inventory={session.secondary} selected={selected} busy={locked} canDropSlot={canDropSlot} onDrop={dropSlot} onDragEnd={noop} onSelect={selectSlot} onActivate={activateItem} onSplit={promptSplit} /></section>
-                : solo ? null : <section className="inventory-stage inventory-stage-secondary"><section className="inventory-panel secondary-empty"><PackageOpen size={28} /><h2>No secondary inventory</h2><p>Open a stash, shop, container, or another player to use this panel.</p></section></section>}
+                : solo ? null : <section className="inventory-stage inventory-stage-secondary"><section className="inventory-panel secondary-empty"><PackageOpen size={28} /><h2>{t("ui.no_secondary_inventory")}</h2><p>{t("ui.open_secondary_inventory")}</p></section></section>}
         </div>
-        <footer className="shortcut-bar"><span><kbd>Esc</kbd> Close</span><span><kbd>↵</kbd> Use selected</span><span><kbd>Drag</kbd> Move or stack</span><span><kbd>Drag out</kbd> Drop</span><span>{movePending ? "Updating inventory…" : `Revision ${session.revision ?? 0}`}</span></footer>
+        <footer className="shortcut-bar"><span><kbd>Esc</kbd> {t("ui.close")}</span><span><kbd>↵</kbd> {t("ui.use_selected")}</span><span><kbd>Drag</kbd> {t("ui.move_or_stack")}</span><span><kbd>Drag out</kbd> {t("ui.drop")}</span><span>{movePending ? t("ui.updating_inventory") : t("ui.revision", { revision: session.revision ?? 0 })}</span></footer>
     </main></UiConfigContext.Provider>
 }
 

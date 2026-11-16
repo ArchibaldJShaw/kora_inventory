@@ -14,6 +14,13 @@ H.ok(source:find("'kora_inventory:client:itemBox'", 1, true),
     'relays inventory-owned item receipt payloads to the bundled UI')
 H.ok(source:find("send('kora_inventory:nui:itemBox', payload)", 1, true),
     'item receipts can render without an inventory session')
+H.ok(source:find('Wait(2000)', 1, true),
+    'client locale push waits two seconds for React to load')
+H.ok(source:find("send('kora_inventory:nui:locales', locales)", 1, true),
+    'resolved client locales are sent to the React UI')
+local localeManifest = assert(io.open('fxmanifest.lua', 'r')):read('*a')
+H.ok(localeManifest:find("'locales/*.lua'", 1, true),
+    'the English Lua locale is included in the resource files')
 H.ok(source:find("Kora.notify.send({", 1, true),
     'rejected inventory actions are presented as notifications')
 

@@ -16,10 +16,11 @@ Messages are sent with `SendNUIMessage({ action, data })` and received in the pa
 
 ## Message flow
 
-1. **Session opens** — The bridge pushes the theme tokens, then `kora_inventory:nui:config`, then `kora_inventory:nui:sessionOpened`, and takes NUI focus.
-2. **Player acts** — The page posts `kora_inventory:nui:intent` with the session id, token, intent and payload (and a `requestId` for direct transport).
-3. **Server answers** — Patches arrive as `kora_inventory:nui:sessionPatched`; the verdict arrives as the callback result or `kora_inventory:nui:intentResult`.
-4. **Session closes** — `kora_inventory:nui:sessionClosed` is sent and focus is released.
+1. **Resource starts** — The client waits two seconds for the React page to mount, then sends `kora_inventory:nui:locales` with strings resolved through `Kora.lang()`.
+2. **Session opens** — The bridge pushes the theme tokens, then `kora_inventory:nui:config`, then `kora_inventory:nui:sessionOpened`, and takes NUI focus.
+3. **Player acts** — The page posts `kora_inventory:nui:intent` with the session id, token, intent and payload (and a `requestId` for direct transport).
+4. **Server answers** — Patches arrive as `kora_inventory:nui:sessionPatched`; the verdict arrives as the callback result or `kora_inventory:nui:intentResult`.
+5. **Session closes** — `kora_inventory:nui:sessionClosed` is sent and focus is released.
 
 ## Terms used on this page
 
@@ -36,6 +37,7 @@ Each is `{ action, data }`. Items in views are keyed by slot and include `label`
 | Option | Type | Description |
 | --- | --- | --- |
 | `kora_inventory:nui:config` | table | `{ hotbarSlots, centreWhenSolo, showHotbar, rightClickSplit, optimisticMoves, queueMoves, moveTimeoutMs, directTransport, scale, images, inspectorDecimals, inspectorCopy, slotBorderWidth }`, derived from `Config.kora_inventory.ui`, `Config.Inspector` and `Config.Slots`. Pushed on resource start and on every session open. |
+| `kora_inventory:nui:locales` | table | Flat key/value map for the React UI, resolved on the client with `Kora.lang()` from `locales/en.lua`. Pushed two seconds after the client resource starts so the page's message listener is ready. |
 | `kora_inventory:nui:sessionOpened` | table | `{ sessionId, token, revision, secondaryRevision, player, secondary?, expires }`. `player` and `secondary` are views `{ id (the inventory key), key, type, label, slots, maxWeight, weight, revision, items, stock? }`. |
 | `kora_inventory:nui:sessionPatched` | table | `{ sessionId, revision?, secondaryRevision?, player?, secondary?, snapshot? }`: the changed view replaces the page's copy. |
 | `kora_inventory:nui:sessionClosed` | table | `{ sessionId, reason }`. |
@@ -164,7 +166,7 @@ The only config sent to the browser (`kora_inventory:nui:config`, at start and o
 
 ### Item receipts and notifications
 
-`itemBoxes` controls the receipt cards. `giveNotify` and `purchaseNotify` control toasts. Text is in `locales/en.json` (`inventory`, `vehicle_doors`, `shop_hints`).
+`itemBoxes` controls the receipt cards. `giveNotify` and `purchaseNotify` control toasts. English strings are in `locales/en.lua` (`inventory`, `vehicle_doors`, `shop_hints`, and `ui`). The React UI uses English defaults until the delayed locale message arrives.
 
 ### Rebuilding
 

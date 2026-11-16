@@ -122,7 +122,7 @@ client_scripts {
 ui_page 'web/build/index.html'
 
 files {
-    'locales/*.json',
+    'locales/*.lua',
     'web/build/index.html',
     'web/build/assets/**/*',
     -- Locally hosted item artwork, served as nui://kora_inventory/images/<file>.

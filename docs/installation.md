@@ -70,7 +70,7 @@ ui_page 'web/build/index.html'
 
 - `provide` lines make `exports['qb-inventory']`, `exports.ox_inventory` and `exports['qb-weapons']` resolve to this resource. The qb-inventory and ox_inventory identities have their own export tables with upstream return shapes, so `exports['qb-inventory']:GetInventory(...)` and `exports.kora_inventory:GetInventory(...)` return different things. See the two Compat modules.
 - Server scripts load in a fixed order: schema, persistence, the authority (`server.lua`), recovery, exchange, crafting, useables, vehicles, containers, weapon carry, qb-weapons adapter, the four bundled shops, then the qb/ox compat modules and `providers.lua`.
-- `files` publishes `locales/*.json`, the built NUI (`web/build/...`), item artwork (`images/**/*`, served as `nui://kora_inventory/images/<file>`) and `html/images/**/*` for legacy consumers.
+- `files` publishes `locales/*.lua`, the built NUI (`web/build/...`), item artwork (`images/**/*`, served as `nui://kora_inventory/images/<file>`) and `html/images/**/*` for legacy consumers.
 - Item artwork is looked up as `images/<item name>.<ext>`. Drop your own file there; `pnpm build` cannot delete it because the images live outside `web/`.
 
 ## Rebuilding the NUI (developers)

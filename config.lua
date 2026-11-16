@@ -435,7 +435,7 @@ Config.kora_inventory = {
         --   targetDistance   metres from the player to the aimed point
         --   partDepth        metres from the end of the vehicle that count as the
         --                    trunk or hood when aiming
-        -- Text comes from locales/*.json (vehicle_doors.*).
+        -- Text comes from locales/en.lua (vehicle_doors.*).
         doors = {
             enabled = true,
             targetOptions = true,
