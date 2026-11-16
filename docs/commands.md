@@ -88,7 +88,7 @@ Toggles the vehicle's trunk lid (the front lid for the models in `vehicles.front
 
 **Result**
 
-The lid opens or closes for everyone after the client takes network control of the vehicle. Notices come from `locales/en.json` (`vehicle_doors.*`).
+The lid opens or closes for everyone after the client takes network control of the vehicle. Notices come from `locales/en.lua` (`vehicle_doors.*`).
 
 ### `/hood`
 

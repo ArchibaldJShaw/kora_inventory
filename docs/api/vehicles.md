@@ -310,4 +310,4 @@ With `trunkAnimation.enabled` the player turns to the boot, the boot (bonnet for
 - `/trunk` and `/hood` toggle from the driver seat only (names from `commandNames`, read once at start).
 - Doors are changed after taking network control, so everyone sees the same state. With `doors.respectLocks` a locked vehicle cannot be opened from outside; closing, and opening from inside, is always allowed.
 
-Text lives in `locales/en.json` under `vehicle_doors`.
+Text lives in `locales/en.lua` under `vehicle_doors`.

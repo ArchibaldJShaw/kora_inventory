@@ -33,6 +33,36 @@ local function pushTheme()
     KoraTheme.refresh()
 end
 
+-- React registers its message listener after the NUI document has loaded.
+-- Keep the locale push delayed on client startup so it cannot reach the page
+-- before that listener exists.
+local UI_LOCALE_KEYS = {
+    'inventory_label', 'revision', 'slot_item', 'slot_number', 'split_amount', 'drop_amount', 'amount', 'weight', 'price', 'empty_slot', 'received', 'purchased', 'removed', 'used', 'updated',
+    'item_receipts', 'hotbar', 'release_to_drop', 'drag_out_to_drop', 'updating_inventory',
+    'cannot_drop', 'action_rejected', 'inventory_timeout', 'too_many_moves', 'item_unavailable',
+    'shop_player_only', 'shop_read_only', 'choose_split_amount', 'no_empty_slot',
+    'use_player_item_only', 'shop_item_unavailable', 'no_destination_slot',
+    'player_slot_rejects_shop_item', 'filter_selected_item', 'transfer_open',
+    'personal_inventory', 'close_inventory', 'selected_item_actions', 'selected',
+    'select_an_item', 'copy_item_details', 'copied', 'copy_failed', 'copy',
+    'close_item_drawer', 'shop_item', 'quantity_to_buy', 'amount_to_move', 'use_item',
+    'open_container', 'buy_amount_price', 'give_amount', 'no_item_description', 'item_inspector', 'inspect_item',
+    'no_secondary_inventory', 'open_secondary_inventory', 'hidden_by_search',
+    'select_item_help', 'close', 'use_selected', 'move_or_stack', 'drop',
+    'split_dialog', 'split_title', 'move_how_many', 'cancel', 'split',
+}
+
+local function pushLocales()
+    local locales = {}
+    for _, key in ipairs(UI_LOCALE_KEYS) do
+        local ok, value = pcall(Kora.lang, 'ui.' .. key)
+        if ok and type(value) == 'string' and value ~= 'ui.' .. key then
+            locales['ui.' .. key] = value
+        end
+    end
+    send('kora_inventory:nui:locales', locales)
+end
+
 -- The presentation half of Config.kora_inventory, and the ONLY config that crosses
 -- into the browser. Sent as a whole table rather than folded into the theme
 -- tokens (which are CSS custom properties, not structured data), and re-sent on
@@ -569,6 +599,11 @@ end)
 
 AddEventHandler('onClientResourceStart', function(resource)
     if resource == 'kora_hud' and type(SetTimeout) == 'function' then SetTimeout(250, registerWithEditor) end
+    if resource ~= GetCurrentResourceName() then return end
+    CreateThread(function()
+        Wait(2000)
+        pushLocales()
+    end)
 end)
 
 AddEventHandler('onResourceStart', function(resource)

@@ -333,7 +333,7 @@ opening is not animated.
 Options: `enabled`, `targetOptions`, `inventoryOption`, `commands`,
 `commandNames` (read once at start), `respectLocks`, `targetDistance`,
 `partDepth`; all default on / sensible values. Text lives in
-`locales/*.json` under `vehicle_doors`.
+`locales/en.lua` under `vehicle_doors`.
 
 ## Item containers, evidence, and confiscation
 
